@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "surface": "#EAE7DC",
+          "on-surface": "#1A1A1A",
+          "search-bg": "#1A1A1A",
+          "search-text": "#FFFFFF",
+          "search-placeholder": "#9CA3AF",
+          "brand-blue": "#1D75D3",
+          "primary": "#1D75D3",
+          "outline-variant": "#D1D1D1",
+        },
+        fontFamily: {
+          "headline": ["Montserrat", "sans-serif"],
+          "body": ["Montserrat", "sans-serif"],
+          "label": ["Montserrat", "sans-serif"]
+        },
+        borderRadius: {
+          "DEFAULT": "1rem",
+          "lg": "2rem",
+          "xl": "3rem",
+          "full": "9999px"
+        },
+      },
+    },
+  }
+</script>
+<style>
+  body {
+    background-color: #EAE7DC;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+  }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .search-glow {
+    box-shadow: 0 0 40px 10px rgba(0,0,0,0.05);
+  }
+
+  /* Chat bubble animations */
+  .bubble { animation: bubbleIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+  @keyframes bubbleIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Typing indicator */
+  .typing span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: #1A1A1A;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: bounce 1.2s infinite;
+    opacity: 0.4;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%,80%,100% { transform: translateY(0); }
+    40%          { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* File upload drag area */
+  .upload-zone {
+    border: 1.5px dashed rgba(26,26,26,0.25);
+    transition: all 0.2s;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: #1D75D3;
+    background: rgba(29,117,211,0.04);
+  }
+
+  /* Scrollbar */
+  #chatWindow::-webkit-scrollbar { width: 4px; }
+  #chatWindow::-webkit-scrollbar-track { background: transparent; }
+  #chatWindow::-webkit-scrollbar-thumb { background: rgba(26,26,26,0.15); border-radius: 4px; }
+
+  /* Section card */
+  .bid-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(26,26,26,0.08);
+  }
+
+  .bid-card-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #1D75D3;
+    margin-bottom: 12px;
+  }
+
+  .bid-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(26,26,26,0.05);
+    font-size: 13px;
+    color: #333;
+    line-height: 1.5;
+  }
+  .bid-item:last-child { border-bottom: none; }
+  .bid-dot { width: 5px; height: 5px; background: #1D75D3; border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
+
+  .missing-item {
+    background: rgba(220,38,38,0.04);
+    border: 1px solid rgba(220,38,38,0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #dc2626;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1.5px solid transparent;
+  }
+  .action-btn-primary {
+    background: #1A1A1A;
+    color: white;
+  }
+  .action-btn-primary:hover { background: #333; transform: translateY(-1px); }
+  .action-btn-outline {
+    background: transparent;
+    color: #1A1A1A;
+    border-color: rgba(26,26,26,0.25);
+  }
+  .action-btn-outline:hover { border-color: #1A1A1A; }
+
+  /* Hidden file input */
+  #fileInput { display: none; }
+</style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col font-body">
+
+<!-- TOP NAV -->
+<header class="fixed top-0 w-full z-50 bg-transparent">
+  <div class="flex justify-between items-center px-8 py-6 w-full max-w-screen-2xl mx-auto antialiased tracking-tight">
+    <div class="text-2xl text-on-surface tracking-tighter font-semibold">BidFlow</div>
+    <nav class="flex items-center gap-8 text-sm font-medium">
+      <a class="text-on-surface hover:opacity-70 transition-colors duration-300 font-semibold" href="#">Home</a>
+    </nav>
+  </div>
+</header>
+
+<!-- LANDING VIEW -->
+<main id="landingView" class="flex-grow flex flex-col items-center justify-center px-6 relative overflow-hidden">
+  <div class="w-full max-w-3xl z-10 flex flex-col items-center">
+
+    <h1 class="text-4xl md:text-5xl lg:text-6xl text-on-surface mb-4 tracking-tight text-center font-medium">
+      The smarter way to <span class="font-bold">bid.</span>
+    </h1>
+    <p class="text-on-surface/50 text-sm mb-14 font-light tracking-wide">Upload a bid or describe your project. AI does the rest.</p>
+
+    <!-- INPUT BAR -->
+    <div class="w-full max-w-2xl relative group">
+      <div class="relative flex items-center bg-transparent border border-on-surface/20 rounded-full px-6 py-2 transition-all duration-300 search-glow" style="border-width:1.5px;">
+        <!-- Plus / Upload trigger -->
+        <button onclick="document.getElementById('fileInput').click()" class="flex items-center justify-center mr-4 text-on-surface/40 hover:text-on-surface transition-colors">
+          <span class="material-symbols-outlined text-xl font-light">add</span>
+        </button>
+        <input id="fileInput" type="file" accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"/>
+
+        <!-- Text input -->
+        <input id="mainInput" class="flex-grow bg-transparent border-none focus:ring-0 text-base text-on-surface placeholder-on-surface/40 font-light py-2"
+          placeholder="Describe your project or upload a bid..."
+          type="text"
+          onkeydown="if(event.key==='Enter') startChat()"/>
+
+        <!-- Mic -->
+        <button class="hover:text-on-surface transition-colors duration-200 flex items-center text-on-surface/40 mr-3">
+          <span class="material-symbols-outlined text-xl font-light">mic</span>
+        </button>
+
+        <!-- Send -->
+        <button onclick="startChat()" class="border border-on-surface/20 text-on-surface/60 w-10 h-10 rounded-full flex items-center justify-center hover:bg-on-surface/5 active:scale-95 transition-all">
+          <span class="material-symbols-outlined text-xl font-light">arrow_forward</span>
+        </button>
+      </div>
+
+      <!-- File preview pill -->
+      <div id="filePill" class="hidden mt-3 ml-2 inline-flex items-center gap-2 bg-white border border-on-surface/10 rounded-full px-4 py-2 text-sm text-on-surface/70">
+        <span class="material-symbols-outlined text-base">description</span>
+        <span id="filePillName">file.pdf</span>
+        <button onclick="clearFile()" class="text-on-surface/30 hover:text-on-surface ml-1">
+          <span class="material-symbols-outlined text-base">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- QUICK STARTS -->
+    <div class="flex flex-wrap gap-3 mt-8 justify-center">
+      <button onclick="quickStart('I need electrical work done on my duplex')" class="text-xs font-medium px-4 py-2 rounded-full border border-on-surface/15 text-on-surface/50 hover:border-on-surface/40 hover:text-on-surface transition-all">⚡ Electrical bid</button>
+      <button onclick="quickStart('I need plumbing work quoted for a renovation')" class="text-xs font-medium px-4 py-2 rounded-full border border-on-surface/15 text-on-surface/50 hover:border-on-surface/40 hover:text-on-surface transition-all">🔧 Plumbing bid</button>
+      <button onclick="quickStart('I need framing and drywall work quoted')" class="text-xs font-medium px-4 py-2 rounded-full border border-on-surface/15 text-on-surface/50 hover:border-on-surface/40 hover:text-on-surface transition-all">🏗️ Framing bid</button>
+      <button onclick="quickStart('I have a contractor bid I want to analyze')" class="text-xs font-medium px-4 py-2 rounded-full border border-on-surface/15 text-on-surface/50 hover:border-on-surface/40 hover:text-on-surface transition-all">📄 Analyze a bid</button>
+    </div>
+  </div>
+</main>
+
+<!-- CHAT VIEW -->
+<div id="chatView" class="hidden flex-col min-h-screen pt-24 pb-32">
+
+  <!-- Chat window -->
+  <div id="chatWindow" class="flex-1 overflow-y-auto px-4 md:px-8 max-w-3xl mx-auto w-full" style="padding-bottom: 20px;">
+  </div>
+
+  <!-- Fixed bottom input -->
+  <div class="fixed bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-md border-t border-on-surface/8 px-4 py-4 z-50">
+    <div class="max-w-3xl mx-auto">
+      <div class="relative flex items-center bg-transparent border border-on-surface/20 rounded-full px-5 py-2" style="border-width:1.5px;">
+        <button onclick="document.getElementById('fileInput2').click()" class="flex items-center justify-center mr-3 text-on-surface/40 hover:text-on-surface transition-colors">
+          <span class="material-symbols-outlined text-xl">add</span>
+        </button>
+        <input id="fileInput2" type="file" style="display:none" accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"/>
+
+        <input id="chatInput" class="flex-grow bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder-on-surface/40 font-light py-2"
+          placeholder="Reply or upload a document..."
+          type="text"
+          onkeydown="if(event.key==='Enter') sendMessage()"/>
+
+        <button onclick="sendMessage()" class="border border-on-surface/20 text-on-surface/60 w-9 h-9 rounded-full flex items-center justify-center hover:bg-on-surface/5 active:scale-95 transition-all ml-2">
+          <span class="material-symbols-outlined text-lg">arrow_forward</span>
+        </button>
+      </div>
+      <p class="text-center text-xs text-on-surface/25 mt-2 font-light">BidFlow AI · Powered by Claude</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let conversationHistory = [];
+let attachedFile = null;
+let attachedFileContent = null;
+let currentBidData = null;
+
+// FILE HANDLING
+document.getElementById('fileInput').addEventListener('change', handleFile);
+document.getElementById('fileInput2').addEventListener('change', handleFile);
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  attachedFile = file;
+  document.getElementById('filePill').classList.remove('hidden');
+  document.getElementById('filePillName').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => { attachedFileContent = ev.target.result; };
+  if (file.type === 'application/pdf' || file.type.includes('image')) {
+    reader.readAsDataURL(file);
+  } else {
+    reader.readAsText(file);
+  }
+}
+
+function clearFile() {
+  attachedFile = null;
+  attachedFileContent = null;
+  document.getElementById('filePill').classList.add('hidden');
+  document.getElementById('fileInput').value = '';
+}
+
+// QUICK START
+function quickStart(text) {
+  document.getElementById('mainInput').value = text;
+  startChat();
+}
+
+// START CHAT from landing
+function startChat() {
+  const input = document.getElementById('mainInput').value.trim();
+  if (!input && !attachedFile) return;
+
+  document.getElementById('landingView').classList.add('hidden');
+  const cv = document.getElementById('chatView');
+  cv.classList.remove('hidden');
+  cv.classList.add('flex');
+
+  const message = input || `Uploaded: ${attachedFile?.name}`;
+  addUserBubble(message);
+  document.getElementById('mainInput').value = '';
+
+  processMessage(message);
+}
+
+// SEND from chat input
+function sendMessage() {
+  const input = document.getElementById('chatInput').value.trim();
+  if (!input && !attachedFile) return;
+
+  const message = input || `Uploaded: ${attachedFile?.name}`;
+  addUserBubble(message);
+  document.getElementById('chatInput').value = '';
+
+  processMessage(message);
+}
+
+// ADD BUBBLES
+function addUserBubble(text) {
+  const cw = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.className = 'bubble flex justify-end mb-4';
+  div.innerHTML = `<div class="max-w-xs md:max-w-md bg-on-surface text-white rounded-2xl rounded-br-sm px-5 py-3 text-sm font-light leading-relaxed">${text}</div>`;
+  cw.appendChild(div);
+  cw.scrollTop = cw.scrollHeight;
+}
+
+function addTypingIndicator() {
+  const cw = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.id = 'typingIndicator';
+  div.className = 'bubble flex justify-start mb-4';
+  div.innerHTML = `<div class="bg-white rounded-2xl rounded-bl-sm px-5 py-4 border border-on-surface/8">
+    <div class="typing"><span></span><span></span><span></span></div>
+  </div>`;
+  cw.appendChild(div);
+  cw.scrollTop = cw.scrollHeight;
+  return div;
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+function addAIBubble(html) {
+  const cw = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.className = 'bubble flex justify-start mb-4';
+  div.innerHTML = `<div class="max-w-xs md:max-w-xl bg-white rounded-2xl rounded-bl-sm px-5 py-4 border border-on-surface/8 text-sm font-light leading-relaxed text-on-surface">${html}</div>`;
+  cw.appendChild(div);
+  cw.scrollTop = cw.scrollHeight;
+}
+
+function addBidAnalysis(data) {
+  const cw = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.className = 'bubble flex justify-start mb-4 w-full';
+
+  let missingHTML = '';
+  if (data.missing && data.missing.length > 0) {
+    missingHTML = `<div class="bid-card">
+      <div class="bid-card-title" style="color:#dc2626;">⚠ Missing Information</div>
+      ${data.missing.map(m => `<div class="missing-item"><span>✗</span><span>${m}</span></div>`).join('')}
+    </div>`;
+  }
+
+  let scopeHTML = '';
+  if (data.scopeItems && data.scopeItems.length > 0) {
+    scopeHTML = `<div class="bid-card">
+      <div class="bid-card-title">Scope of Work</div>
+      ${data.scopeItems.map(i => `<div class="bid-item"><div class="bid-dot"></div><span>${i}</span></div>`).join('')}
+    </div>`;
+  }
+
+  let questionsHTML = '';
+  if (data.clarifyingQuestions && data.clarifyingQuestions.length > 0) {
+    questionsHTML = `<div class="bid-card">
+      <div class="bid-card-title">Contractor Must Answer</div>
+      ${data.clarifyingQuestions.map(q => `<div class="bid-item"><div class="bid-dot" style="background:#1D75D3"></div><span>${q}</span></div>`).join('')}
+    </div>`;
+  }
+
+  div.innerHTML = `<div class="w-full max-w-xl">
+    <div class="text-xs font-semibold text-on-surface/40 uppercase tracking-widest mb-3 ml-1">Bid Analysis</div>
+    ${scopeHTML}
+    ${missingHTML}
+    ${questionsHTML}
+    <div class="flex gap-3 mt-4 flex-wrap">
+      <button onclick="requestFullBid()" class="action-btn action-btn-primary">
+        <span class="material-symbols-outlined text-base">send</span> Request standardized bid
+      </button>
+      <button onclick="addAIBubble('Got it. What would you like to change?')" class="action-btn action-btn-outline">
+        ✏️ Edit scope
+      </button>
+    </div>
+  </div>`;
+  cw.appendChild(div);
+  cw.scrollTop = cw.scrollHeight;
+}
+
+// PROCESS MESSAGE
+async function processMessage(userMessage) {
+  const typing = addTypingIndicator();
+
+  conversationHistory.push({ role: "user", content: userMessage });
+
+  const systemPrompt = `You are BidFlow AI — an intelligent bid analysis and standardization assistant for property owners and contractors. Your job is to:
+
+1. When an owner describes a project: Extract the scope, identify what information is missing, generate clarifying questions, and create a standardized bid request.
+2. When a contractor uploads or pastes a bid: Analyze it, flag missing information, and ask if their price is final or if they want to compete.
+3. Always be conversational, clear, and concise. No jargon. Talk like a smart advisor, not a robot.
+
+When you have enough project information, respond with a JSON block like this (wrapped in <BIDANALYSIS> tags):
+<BIDANALYSIS>
+{
+  "scopeItems": ["item1", "item2"],
+  "missing": ["missing info 1", "missing info 2"],
+  "clarifyingQuestions": ["question 1", "question 2"]
+}
+</BIDANALYSIS>
+
+For simple conversational replies, just respond normally without JSON.
+Keep responses short and direct. One question at a time if you need more info.`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: conversationHistory
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content.map(b => b.text || '').join('');
+    conversationHistory.push({ role: "assistant", content: text });
+
+    removeTypingIndicator();
+
+    // Check for bid analysis JSON
+    const analysisMatch = text.match(/<BIDANALYSIS>([\s\S]*?)<\/BIDANALYSIS>/);
+    if (analysisMatch) {
+      try {
+        const analysisData = JSON.parse(analysisMatch[1].trim());
+        currentBidData = analysisData;
+
+        // Show any text before the JSON
+        const beforeText = text.split('<BIDANALYSIS>')[0].trim();
+        if (beforeText) addAIBubble(beforeText);
+
+        addBidAnalysis(analysisData);
+      } catch {
+        addAIBubble(text.replace(/<BIDANALYSIS>[\s\S]*?<\/BIDANALYSIS>/, '').trim());
+      }
+    } else {
+      addAIBubble(text);
+    }
+
+  } catch (err) {
+    removeTypingIndicator();
+    addAIBubble("Something went wrong connecting to the AI. Please try again.");
+    console.error(err);
+  }
+}
+
+function requestFullBid() {
+  addUserBubble("Yes — send the standardized bid request to contractors.");
+  addTypingIndicator();
+  setTimeout(() => {
+    removeTypingIndicator();
+    addAIBubble(`✅ <strong>Standardized bid request ready.</strong><br><br>
+    Add contractor emails below and BidFlow will send each one the same structured form. They submit through the platform — no phone tag, no guessing, no haggling.<br><br>
+    <div style="margin-top:12px;">
+      <input type="email" placeholder="contractor@email.com" style="width:100%;background:rgba(26,26,26,0.04);border:1.5px solid rgba(26,26,26,0.15);border-radius:9999px;padding:10px 18px;font-size:13px;font-family:Montserrat,sans-serif;outline:none;margin-bottom:8px;" /><br>
+      <button class="action-btn action-btn-primary" style="margin-top:8px;" onclick="addAIBubble('🚀 Bid requests sent. You\\'ll be notified when contractors respond.')">
+        <span class="material-symbols-outlined text-base">send</span> Send bid request
+      </button>
+    </div>`);
+  }, 1200);
+}
+</script>
+</body>
+</html>
