@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "surface": "#EAE7DC",
+          "on-surface": "#1A1A1A",
+          "search-bg": "#1A1A1A",
+          "search-text": "#FFFFFF",
+          "search-placeholder": "#9CA3AF",
+          "brand-blue": "#1D75D3",
+          "primary": "#1D75D3",
+          "outline-variant": "#D1D1D1",
+        },
+        fontFamily: {
+          "headline": ["Montserrat", "sans-serif"],
+          "body": ["Montserrat", "sans-serif"],
+          "label": ["Montserrat", "sans-serif"]
+        },
+        borderRadius: {
+          "DEFAULT": "1rem",
+          "lg": "2rem",
+          "xl": "3rem",
+          "full": "9999px"
+        },
+      },
+    },
+  }
+</script>
+<style>
+  body {
+    background-color: #EAE7DC;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+  }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .search-glow {
+    box-shadow: 0 0 40px 10px rgba(0,0,0,0.05);
+  }
+  .glove {
+    display: inline-block;
+    animation: glowPulse 2.5s ease-in-out infinite;
+    filter: drop-shadow(0 2px 8px rgba(220,38,38,0.25));
+    cursor: default;
+    user-select: none;
+  }
+  @keyframes glowPulse {
+    0%,100% { transform: scale(1) rotate(-5deg); filter: drop-shadow(0 2px 8px rgba(220,38,38,0.25)); }
+    50% { transform: scale(1.1) rotate(3deg); filter: drop-shadow(0 4px 14px rgba(220,38,38,0.45)); }
+  }
+
+  /* Chat bubbles */
+  .bubble { animation: bubbleIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+  @keyframes bubbleIn {
+    from { opacity:0; transform:translateY(10px) scale(0.97); }
+    to { opacity:1; transform:translateY(0) scale(1); }
+  }
+
+  .typing span {
+    display:inline-block; width:6px; height:6px;
+    background:#1A1A1A; border-radius:50%; margin:0 2px;
+    animation:bounce 1.2s infinite; opacity:0.4;
+  }
+  .typing span:nth-child(2){animation-delay:0.2s;}
+  .typing span:nth-child(3){animation-delay:0.4s;}
+  @keyframes bounce {
+    0%,80%,100%{transform:translateY(0);}
+    40%{transform:translateY(-6px);opacity:1;}
+  }
+
+  #chatWindow::-webkit-scrollbar{width:4px;}
+  #chatWindow::-webkit-scrollbar-track{background:transparent;}
+  #chatWindow::-webkit-scrollbar-thumb{background:rgba(26,26,26,0.15);border-radius:4px;}
+  #fileInput,#fileInput2{display:none;}
+
+  .action-btn {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:11px 22px; border-radius:9999px;
+    font-size:13px; font-weight:700; cursor:pointer;
+    transition:all 0.2s; border:1.5px solid transparent;
+    font-family:'Montserrat',sans-serif;
+  }
+  .btn-dark { background:#1A1A1A; color:white; }
+  .btn-dark:hover { background:#333; transform:translateY(-1px); }
+  .btn-outline { background:transparent; color:#1A1A1A; border-color:rgba(26,26,26,0.25); }
+  .btn-outline:hover { border-color:#1A1A1A; }
+</style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary/20 min-h-screen flex flex-col font-body">
+
+<!-- TOP NAV -->
+<header class="fixed top-0 w-full z-50 bg-transparent">
+  <div class="flex justify-between items-center px-8 py-6 w-full max-w-screen-2xl mx-auto antialiased tracking-tight">
+    <div class="flex items-center gap-2">
+      <div class="text-2xl text-on-surface tracking-tighter font-semibold">BidFlow</div>
+      <span class="glove text-xl">🥊</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <nav class="flex items-center gap-8 text-sm font-medium">
+        <a class="text-on-surface hover:opacity-70 transition-colors duration-300 font-semibold" href="#">Home</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<!-- LANDING VIEW -->
+<main id="landingView" class="flex-grow flex flex-col items-center justify-center px-6 relative overflow-hidden">
+  <div class="w-full max-w-3xl z-10 flex flex-col items-center">
+
+    <h1 class="text-4xl md:text-5xl lg:text-6xl text-on-surface mb-16 tracking-tight text-center font-medium">
+      The smarter way to <span class="font-bold">bid.</span>
+    </h1>
+
+    <div class="w-full max-w-2xl relative group">
+      <div class="relative flex items-center bg-transparent border border-on-surface/20 rounded-full px-6 py-2 transition-all duration-300 search-glow" style="border-width:1.5px;">
+        <button onclick="document.getElementById('fileInput').click()" class="flex items-center justify-center mr-4 text-on-surface/40 hover:text-on-surface transition-colors">
+          <span class="material-symbols-outlined text-xl font-light">add</span>
+        </button>
+        <input id="fileInput" type="file" accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"/>
+
+        <input id="mainInput"
+          class="flex-grow bg-transparent border-none focus:ring-0 text-base text-on-surface placeholder-on-surface/40 font-light py-2"
+          placeholder="Bid smart. Win more."
+          type="text"
+          onkeydown="if(event.key==='Enter') startChat()"/>
+
+        <button class="hover:text-on-surface transition-colors duration-200 flex items-center text-on-surface/40 mr-3">
+          <span class="material-symbols-outlined text-xl font-light">mic</span>
+        </button>
+
+        <button onclick="startChat()" class="border border-on-surface/20 text-on-surface/60 w-10 h-10 rounded-full flex items-center justify-center hover:bg-on-surface/5 active:scale-95 transition-all">
+          <span class="material-symbols-outlined text-xl font-light">arrow_forward</span>
+        </button>
+      </div>
+
+      <div id="filePill" class="hidden mt-3 ml-2 inline-flex items-center gap-2 bg-white border border-on-surface/10 rounded-full px-4 py-2 text-sm text-on-surface/70">
+        <span class="material-symbols-outlined text-base">description</span>
+        <span id="filePillName"></span>
+        <button onclick="clearFile()" class="text-on-surface/30 hover:text-on-surface ml-1">
+          <span class="material-symbols-outlined text-base">close</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mt-8 justify-center">
+      <button onclick="quickStart('electrical')" class="text-xs font-medium px-4 py-2 rounded-full border border-on-surface/15 text-on-surface/50 hover:border-on-surface/40 hover:text-on-surface transition-all">⚡ Electrical</button>
+      <button onclick="quickStart('plumbing')" class="text-xs font-medium px-4 py-2 rounded-full border border-on-surface/15 text-on-surface/50 hover:border-on-surface/40 hover:text-on-surface transition-all">🔧 Plumbing</button>
+      <button onclick="quickStart('framing')" class="text-xs font-medium px-4 py-2 rounded-full border border-on-surface/15 text-on-surface/50 hover:border-on-surface/40 hover:text-on-surface transition-all">🏗️ Framing</button>
+      <button onclick="quickStart('analyze')" class="text-xs font-medium px-4 py-2 rounded-full border border-on-surface/15 text-on-surface/50 hover:border-on-surface/40 hover:text-on-surface transition-all">📄 Analyze bid</button>
+    </div>
+  </div>
+</main>
+
+<!-- CHAT VIEW -->
+<div id="chatView" class="hidden flex-col min-h-screen pt-24 pb-36">
+  <div id="chatWindow" class="flex-1 overflow-y-auto px-4 md:px-8 max-w-3xl mx-auto w-full" style="padding-bottom:20px;"></div>
+
+  <div class="fixed bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-md border-t border-on-surface/8 px-4 py-4 z-50">
+    <div class="max-w-3xl mx-auto">
+      <div class="relative flex items-center bg-transparent border border-on-surface/20 rounded-full px-5 py-2" style="border-width:1.5px;">
+        <button onclick="document.getElementById('fileInput2').click()" class="flex items-center justify-center mr-3 text-on-surface/40 hover:text-on-surface transition-colors">
+          <span class="material-symbols-outlined text-xl">add</span>
+        </button>
+        <input id="fileInput2" type="file" accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"/>
+        <input id="chatInput"
+          class="flex-grow bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder-on-surface/40 font-light py-2"
+          placeholder="Reply or upload your bid document..."
+          type="text"
+          onkeydown="if(event.key==='Enter') sendMessage()"/>
+        <button onclick="sendMessage()" class="border border-on-surface/20 text-on-surface/60 w-9 h-9 rounded-full flex items-center justify-center hover:bg-on-surface/5 active:scale-95 transition-all ml-2">
+          <span class="material-symbols-outlined text-lg">arrow_forward</span>
+        </button>
+      </div>
+      <p class="text-center text-xs text-on-surface/25 mt-2 font-light">BidFlow 🥊 · Powered by AI</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let conversationHistory = [];
+let attachedFile = null;
+
+document.getElementById('fileInput').addEventListener('change', handleFile);
+document.getElementById('fileInput2').addEventListener('change', handleFile);
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  attachedFile = file;
+  document.getElementById('filePill').classList.remove('hidden');
+  document.getElementById('filePillName').textContent = file.name;
+}
+
+function clearFile() {
+  attachedFile = null;
+  document.getElementById('filePill').classList.add('hidden');
+  document.getElementById('fileInput').value = '';
+}
+
+const quickStartGreetings = {
+  'electrical': "Hey, welcome to BidFlow! 👋 Let's get your electrical bid submitted. Tell me about the job — what's the scope of work and what's your price?",
+  'plumbing': "Hey, welcome to BidFlow! 👋 Let's get your plumbing bid submitted. Tell me about the job — what's the scope of work and what's your price?",
+  'framing': "Hey, welcome to BidFlow! 👋 Let's get your framing bid submitted. Tell me about the job — what's the scope of work and what's your price?",
+  'analyze': "Hey, welcome to BidFlow! 👋 Go ahead and paste your bid or upload the document and we'll walk through everything together."
+};
+
+function quickStart(type) {
+  document.getElementById('landingView').classList.add('hidden');
+  const cv = document.getElementById('chatView');
+  cv.classList.remove('hidden');
+  cv.classList.add('flex');
+  const greeting = quickStartGreetings[type];
+  conversationHistory.push({ role: "assistant", content: greeting });
+  addAIBubble(greeting);
+}
+
+function startChat() {
+  const input = document.getElementById('mainInput').value.trim();
+  if (!input && !attachedFile) return;
+  document.getElementById('landingView').classList.add('hidden');
+  const cv = document.getElementById('chatView');
+  cv.classList.remove('hidden');
+  cv.classList.add('flex');
+  const message = input || `Uploaded: ${attachedFile?.name}`;
+  addUserBubble(message);
+  document.getElementById('mainInput').value = '';
+  processMessage(message);
+}
+
+function sendMessage() {
+  const input = document.getElementById('chatInput').value.trim();
+  if (!input && !attachedFile) return;
+  const message = input || `Uploaded: ${attachedFile?.name}`;
+  addUserBubble(message);
+  document.getElementById('chatInput').value = '';
+  processMessage(message);
+}
+
+function addUserBubble(text) {
+  const cw = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.className = 'bubble flex justify-end mb-4';
+  div.innerHTML = `<div class="max-w-xs md:max-w-md bg-on-surface text-white rounded-2xl rounded-br-sm px-5 py-3 text-sm font-light leading-relaxed">${text}</div>`;
+  cw.appendChild(div);
+  cw.scrollTop = cw.scrollHeight;
+}
+
+function addTypingIndicator() {
+  const cw = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.id = 'typingIndicator';
+  div.className = 'bubble flex justify-start mb-4';
+  div.innerHTML = `<div class="bg-white rounded-2xl rounded-bl-sm px-5 py-4 border border-on-surface/8"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  cw.appendChild(div);
+  cw.scrollTop = cw.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+function addAIBubble(html) {
+  const cw = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.className = 'bubble flex justify-start mb-4';
+  div.innerHTML = `<div class="max-w-xs md:max-w-xl bg-white rounded-2xl rounded-bl-sm px-5 py-4 border border-on-surface/8 text-sm font-light leading-relaxed text-on-surface">${html}</div>`;
+  cw.appendChild(div);
+  cw.scrollTop = cw.scrollHeight;
+}
+
+function addEnterRingCard() {
+  const cw = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.className = 'bubble flex justify-start mb-4 w-full';
+  div.innerHTML = `
+  <div class="w-full max-w-xl bg-white rounded-2xl border border-on-surface/8 overflow-hidden">
+    <div style="background:#1A1A1A;padding:20px 24px;">
+      <div style="font-size:32px;margin-bottom:8px;">🥊</div>
+      <div style="font-family:Montserrat,sans-serif;font-size:18px;font-weight:700;color:white;margin-bottom:4px;">Your bid is complete.</div>
+      <div style="font-family:Montserrat,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);font-weight:300;">Ready to enter the ring?</div>
+    </div>
+    <div style="padding:20px 24px;">
+      <div style="font-size:13px;color:#555;line-height:1.7;margin-bottom:18px;font-weight:300;">
+        Two quick questions before we lock you in:<br><br>
+        <strong style="color:#1A1A1A;">1.</strong> Is this your best and final price, or do you have a little flexibility?<br>
+        <strong style="color:#1A1A1A;">2.</strong> If you don't win the first round, would you want a chance to revise before the owner decides?
+      </div>
+      <div style="font-size:11px;color:#999;padding:12px;background:#f9f9f7;border-radius:10px;margin-bottom:16px;line-height:1.6;">
+        🔒 Your price stays sealed until the bell rings — nobody sees anything until all bids are in.
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="action-btn btn-dark" onclick="lockInBid(this)">🥊 Lock in my price</button>
+        <button class="action-btn btn-outline" onclick="flexibleBid(this)">I have some room</button>
+      </div>
+    </div>
+  </div>`;
+  cw.appendChild(div);
+  cw.scrollTop = cw.scrollHeight;
+}
+
+function lockInBid(btn) {
+  btn.closest('.bubble').remove();
+  addAIBubble(`🥊 <strong>You're in the ring. Price locked and sealed.</strong><br><br>You'll hear from us once all bids are reviewed. May the best bid win.`);
+}
+
+function flexibleBid(btn) {
+  btn.closest('.bubble').remove();
+  addAIBubble(`Got it — noted that you have some flexibility. 🤝<br><br>Your current price is sealed for the first round. If you don't win, you'll get one chance to revise before the final decision.<br><br>You're in the ring. Good luck.`);
+}
+
+async function processMessage(userMessage) {
+  addTypingIndicator();
+  conversationHistory.push({ role: "user", content: userMessage });
+
+  try {
+    // Try Atlas bridge first, fall back to Claude API
+    let text = "";
+    try {
+      const bridgeResponse = await fetch("https://deport-atypical-doorbell.ngrok-free.dev/bid", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-BidFlow-Secret": "bidflow2026",
+          "ngrok-skip-browser-warning": "true"
+        },
+        body: JSON.stringify({ message: userMessage })
+      });
+      if (bridgeResponse.ok) {
+        const bridgeData = await bridgeResponse.json();
+        text = bridgeData.message || bridgeData.response || "";
+      }
+    } catch(e) {}
+
+    // Fallback to Claude if bridge fails
+    if (!text) {
+      const systemPrompt = `You are BidFlow — an AI bid analysis assistant. Your only job is to analyze contractor bids against a 12-section master checklist conversationally. Talk like a sharp project manager. Ask for missing info naturally, 1-2 things at a time. Never reveal other bids. When ALL 12 sections complete respond with only: ENTER_THE_RING. Sections: 1)Credentials 2)Insurance 3)Scope 4)Materials 5)Labor 6)Timeline 7)Permits 8)Cost breakdown 9)Payment terms 10)Warranty 11)Additional info 12)References`;
+      const fallbackResponse = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: systemPrompt,
+          messages: conversationHistory
+        })
+      });
+      const fallbackData = await fallbackResponse.json();
+      text = fallbackData.content?.map(b => b.text || "").join("") || "";
+    }
+
+    if (text) conversationHistory.push({ role: "assistant", content: text });
+    removeTypingIndicator();
+
+    if (text.trim() === "ENTER_THE_RING") {
+      addEnterRingCard();
+    } else {
+      addAIBubble(text || "Got it — processing your bid.");
+    }
+
+  } catch (err) {
+    removeTypingIndicator();
+    addAIBubble("Something went wrong connecting. Please try again.");
+    console.error(err);
+  }
+}
+</script>
+</body>
+</html>
